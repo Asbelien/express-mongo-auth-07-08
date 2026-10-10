@@ -1,0 +1,85 @@
+<%- include('partials/header', { title: 'Mi pase', page: 'dashboard', auth: true }) %>
+<div class="page-title">
+    <h1 id="greeting">Hola</h1>
+    <p>Este es tu pase de acceso. Mientras la sesión esté activa, todo lo que ves aquí es tuyo.</p>
+</div>
+
+<article class="pass wide">
+    <div class="pass-head">
+        <div class="pass-top">
+            <div>
+                <h2 id="fullName">Cargando</h2>
+                <p id="email"></p>
+            </div>
+            <span id="stamp" class="stamp user">user</span>
+        </div>
+    </div>
+    <div class="pass-cut"></div>
+    <div class="pass-body">
+        <dl class="data">
+            <div>
+                <dt>Teléfono</dt>
+                <dd id="phoneNumber">-</dd>
+            </div>
+            <div>
+                <dt>Edad</dt>
+                <dd id="age">-</dd>
+            </div>
+            <div>
+                <dt>Fecha de nacimiento</dt>
+                <dd id="birthdate">-</dd>
+            </div>
+            <div>
+                <dt>Dirección</dt>
+                <dd id="adress">-</dd>
+            </div>
+            <div>
+                <dt>Roles</dt>
+                <dd id="roles">-</dd>
+            </div>
+            <div>
+                <dt>Miembro desde</dt>
+                <dd id="createdAt">-</dd>
+            </div>
+        </dl>
+        <p class="link-line">
+            <a href="/profile">Editar mis datos</a>
+            <span id="admin-link" class="hide"> o <a href="/admin">ver todos los usuarios</a></span>
+        </p>
+    </div>
+</article>
+<%- include('partials/footer') %>
+<script>
+    const setText = (id, value) => {
+        document.getElementById(id).textContent = value || '-';
+    };
+
+    const load = async () => {
+        try {
+            const user = await Auth.api('/api/users/me');
+            const isAdmin = user.roles.includes('admin');
+
+            setText('greeting', `Hola, ${user.name}`);
+            setText('fullName', `${user.name} ${user.lastName}`);
+            setText('email', user.email);
+            setText('phoneNumber', user.phoneNumber);
+            setText('age', user.age !== null ? `${user.age} años` : '');
+            setText('birthdate', Auth.formatDate(user.birthdate));
+            setText('adress', user.adress);
+            setText('roles', user.roles.join(', '));
+            setText('createdAt', Auth.formatDate(user.createdAt));
+
+            const stamp = document.getElementById('stamp');
+            stamp.textContent = isAdmin ? 'admin' : 'user';
+            stamp.classList.toggle('user', !isAdmin);
+
+            if (isAdmin) document.getElementById('admin-link').classList.remove('hide');
+        } catch (err) {
+            Auth.notify(err.message);
+        }
+    };
+
+    if (Auth.requireAuth(['user', 'admin'])) load();
+</script>
+</body>
+</html>

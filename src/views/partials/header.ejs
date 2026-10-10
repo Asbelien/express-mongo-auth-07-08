@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %> · pase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="<%= locals.auth ? 'is-private' : 'is-public' %>">
+<% if (locals.auth) { %>
+    <header class="topbar">
+        <a href="/dashboard" class="brand">pase</a>
+        <nav class="topnav">
+            <a href="/dashboard" class="<%= page === 'dashboard' ? 'active' : '' %>">Mi pase</a>
+            <a href="/profile" class="<%= page === 'profile' ? 'active' : '' %>">Mi cuenta</a>
+            <a href="/admin" id="nav-admin" class="hide <%= page === 'admin' ? 'active' : '' %>">Usuarios</a>
+        </nav>
+        <div class="session">
+            <span id="session-timer" class="timer" title="Tiempo restante de tu sesión">--:--</span>
+            <button id="logout-btn" class="logout" type="button">Salir</button>
+        </div>
+    </header>
+<% } %>
+<main class="stage">

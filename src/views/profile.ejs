@@ -1,0 +1,147 @@
+<%- include('partials/header', { title: 'Mi cuenta', page: 'profile', auth: true }) %>
+<div class="page-title">
+    <h1>Mi cuenta</h1>
+    <p>Revisa y actualiza los datos de tu pase. El email y los roles no se pueden cambiar.</p>
+</div>
+
+<article class="pass wide">
+    <div class="pass-head">
+        <div class="pass-top">
+            <div>
+                <h2 id="fullName">Cargando</h2>
+                <p id="ageLine"></p>
+            </div>
+            <span id="stamp" class="stamp user">user</span>
+        </div>
+    </div>
+    <div class="pass-cut"></div>
+    <div class="pass-body">
+        <form id="profile-form" novalidate>
+            <div id="msg" class="msg" role="alert"></div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input class="browser-default" type="email" id="email" readonly>
+                </div>
+                <div class="field">
+                    <label for="roles">Roles</label>
+                    <input class="browser-default" type="text" id="roles" readonly>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="name">Nombre</label>
+                    <input class="browser-default" type="text" id="name" name="name" autocomplete="given-name" required>
+                </div>
+                <div class="field">
+                    <label for="lastName">Apellido</label>
+                    <input class="browser-default" type="text" id="lastName" name="lastName" autocomplete="family-name" required>
+                </div>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="phoneNumber">Teléfono</label>
+                    <input class="browser-default" type="tel" id="phoneNumber" name="phoneNumber" autocomplete="tel" required>
+                </div>
+                <div class="field">
+                    <label for="birthdate">Fecha de nacimiento</label>
+                    <input class="browser-default" type="date" id="birthdate" name="birthdate" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="adress">Dirección</label>
+                <input class="browser-default" type="text" id="adress" name="adress" autocomplete="street-address">
+            </div>
+
+            <div class="field">
+                <label for="url_profile">Enlace de tu foto de perfil</label>
+                <input class="browser-default" type="url" id="url_profile" name="url_profile">
+                <p class="hint">Opcional. Pega la URL de una imagen.</p>
+            </div>
+
+            <button id="submit" class="btn-pase auto" type="submit">Guardar cambios</button>
+        </form>
+    </div>
+</article>
+<%- include('partials/footer') %>
+<script>
+    const form = document.getElementById('profile-form');
+    const msg = document.getElementById('msg');
+    const submit = document.getElementById('submit');
+
+    form.birthdate.max = new Date().toISOString().split('T')[0];
+
+    const fill = (user) => {
+        const isAdmin = user.roles.includes('admin');
+        const stamp = document.getElementById('stamp');
+
+        document.getElementById('fullName').textContent = `${user.name} ${user.lastName}`;
+        document.getElementById('ageLine').textContent = user.age !== null ? `${user.age} años` : '';
+        document.getElementById('email').value = user.email;
+        document.getElementById('roles').value = user.roles.join(', ');
+
+        form.name.value = user.name || '';
+        form.lastName.value = user.lastName || '';
+        form.phoneNumber.value = user.phoneNumber || '';
+        form.birthdate.value = user.birthdate ? user.birthdate.split('T')[0] : '';
+        form.adress.value = user.adress || '';
+        form.url_profile.value = user.url_profile || '';
+
+        stamp.textContent = isAdmin ? 'admin' : 'user';
+        stamp.classList.toggle('user', !isAdmin);
+    };
+
+    const showError = (text) => {
+        msg.textContent = text;
+        msg.classList.add('show');
+    };
+
+    const load = async () => {
+        try {
+            fill(await Auth.api('/api/users/me'));
+        } catch (err) {
+            Auth.notify(err.message);
+        }
+    };
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg.classList.remove('show');
+
+        const data = {
+            name: form.name.value.trim(),
+            lastName: form.lastName.value.trim(),
+            phoneNumber: form.phoneNumber.value.trim(),
+            birthdate: form.birthdate.value,
+            adress: form.adress.value.trim(),
+            url_profile: form.url_profile.value.trim()
+        };
+
+        if (!data.name || !data.lastName || !data.phoneNumber || !data.birthdate) {
+            showError('Nombre, apellido, teléfono y fecha de nacimiento son obligatorios.');
+            return;
+        }
+
+        submit.disabled = true;
+
+        try {
+            fill(await Auth.api('/api/users/me', {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            }));
+            Auth.notify('Cambios guardados', true);
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            submit.disabled = false;
+        }
+    });
+
+    if (Auth.requireAuth(['user', 'admin'])) load();
+</script>
+</body>
+</html>

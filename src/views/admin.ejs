@@ -1,0 +1,139 @@
+<%- include('partials/header', { title: 'Usuarios', page: 'admin', auth: true }) %>
+<div class="page-title">
+    <h1>Usuarios</h1>
+    <p id="count">Cargando el registro de pases.</p>
+</div>
+
+<section class="registro">
+    <div class="registro-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Roles</th>
+                    <th>Registrado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+        </table>
+    </div>
+    <p id="empty" class="empty hide">Todavía no hay usuarios registrados.</p>
+</section>
+
+<div id="user-modal" class="modal">
+    <div class="modal-content">
+        <h2 id="m-name">Usuario</h2>
+        <p id="m-email"></p>
+        <dl class="data" style="margin-top: 1.5rem;">
+            <div>
+                <dt>Teléfono</dt>
+                <dd id="m-phone">-</dd>
+            </div>
+            <div>
+                <dt>Edad</dt>
+                <dd id="m-age">-</dd>
+            </div>
+            <div>
+                <dt>Fecha de nacimiento</dt>
+                <dd id="m-birthdate">-</dd>
+            </div>
+            <div>
+                <dt>Dirección</dt>
+                <dd id="m-adress">-</dd>
+            </div>
+            <div>
+                <dt>Roles</dt>
+                <dd id="m-roles">-</dd>
+            </div>
+            <div>
+                <dt>Registrado</dt>
+                <dd id="m-created">-</dd>
+            </div>
+        </dl>
+    </div>
+    <div class="modal-footer">
+        <button class="modal-close btn-pase ghost auto" type="button">Cerrar</button>
+    </div>
+</div>
+<%- include('partials/footer') %>
+<script>
+    const rows = document.getElementById('rows');
+    const count = document.getElementById('count');
+    const empty = document.getElementById('empty');
+    const modal = M.Modal.init(document.getElementById('user-modal'));
+
+    const setText = (id, value) => {
+        document.getElementById(id).textContent = value || '-';
+    };
+
+    const cell = (text) => {
+        const td = document.createElement('td');
+        td.textContent = text || '-';
+        return td;
+    };
+
+    const rolesCell = (roles) => {
+        const td = document.createElement('td');
+        roles.forEach(role => {
+            const chip = document.createElement('span');
+            chip.className = role === 'admin' ? 'chip admin' : 'chip';
+            chip.textContent = role;
+            td.appendChild(chip);
+        });
+        return td;
+    };
+
+    const openUser = async (id) => {
+        try {
+            const user = await Auth.api(`/api/users/${id}`);
+            setText('m-name', `${user.name} ${user.lastName}`);
+            setText('m-email', user.email);
+            setText('m-phone', user.phoneNumber);
+            setText('m-age', user.age !== null ? `${user.age} años` : '');
+            setText('m-birthdate', Auth.formatDate(user.birthdate));
+            setText('m-adress', user.adress);
+            setText('m-roles', user.roles.join(', '));
+            setText('m-created', Auth.formatDate(user.createdAt));
+            modal.open();
+        } catch (err) {
+            Auth.notify(err.message);
+        }
+    };
+
+    const renderRow = (user) => {
+        const tr = document.createElement('tr');
+        tr.appendChild(cell(`${user.name} ${user.lastName}`));
+        tr.appendChild(cell(user.email));
+        tr.appendChild(rolesCell(user.roles));
+        tr.appendChild(cell(Auth.formatDate(user.createdAt)));
+
+        const action = document.createElement('td');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn-mini';
+        button.textContent = 'Ver información';
+        button.addEventListener('click', () => openUser(user.id));
+        action.appendChild(button);
+        tr.appendChild(action);
+
+        return tr;
+    };
+
+    const load = async () => {
+        try {
+            const users = await Auth.api('/api/users');
+            rows.replaceChildren(...users.map(renderRow));
+            count.textContent = users.length === 1 ? '1 usuario registrado.' : `${users.length} usuarios registrados.`;
+            empty.classList.toggle('hide', users.length > 0);
+        } catch (err) {
+            count.textContent = 'No se pudo cargar el registro.';
+            Auth.notify(err.message);
+        }
+    };
+
+    if (Auth.requireAuth(['admin'])) load();
+</script>
+</body>
+</html>
